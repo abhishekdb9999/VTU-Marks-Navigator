@@ -12,11 +12,10 @@ export const SubjectSchema = z.object({
     .min(1, "Credits must be at least 1")
     .max(6, "Credits cannot exceed 6"),
   marksObtained: z.coerce
-    .number({ invalid_type_error: "Marks must be a number" })
+    .number({ required_error: "Marks are required", invalid_type_error: "Marks must be a number" })
     .min(0, "Marks must be at least 0")
-    .max(100, "Marks cannot exceed 100")
-    .optional(),
-  grade: GradeSchema,
+    .max(100, "Marks cannot exceed 100"),
+  grade: GradeSchema, // This will be set internally based on marksObtained
 });
 export type Subject = z.infer<typeof SubjectSchema>;
 

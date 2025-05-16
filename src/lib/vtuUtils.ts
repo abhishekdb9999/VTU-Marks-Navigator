@@ -1,5 +1,6 @@
 
 import type { Subject, Semester, Grade } from '@/types/vtuCalculator';
+import { GRADE_OPTIONS } from '@/types/vtuCalculator';
 
 export const gradePoints: Record<Grade, number> = {
   S: 10,
@@ -25,6 +26,20 @@ export const marksRange: Record<Grade, string> = {
   AB: 'Absent',
 };
 
+export function getGradeFromMarks(marks: number): Grade {
+  if (marks >= 90 && marks <= 100) return 'S';
+  if (marks >= 80 && marks <= 89) return 'A';
+  if (marks >= 70 && marks <= 79) return 'B';
+  if (marks >= 60 && marks <= 69) return 'C';
+  if (marks >= 50 && marks <= 59) return 'D';
+  if (marks >= 45 && marks <= 49) return 'E';
+  if (marks >= 40 && marks <= 44) return 'F';
+  if (marks >= 0 && marks < 40) return 'FAIL';
+  // Default to FAIL for out-of-range marks, though schema should prevent this.
+  return 'FAIL'; 
+}
+
+
 export interface CalculatedSemester {
   sgpa: number;
   totalCredits: number;
@@ -40,11 +55,14 @@ export function calculateSGPA(subjects: Subject[]): { sgpa: number; totalCredits
   let totalCredits = 0;
 
   subjects.forEach(subject => {
-    if (subject.credits > 0 && subject.grade) {
-      if (subject.grade in gradePoints) {
-        totalCreditPoints += gradePoints[subject.grade] * subject.credits;
-        totalCredits += subject.credits;
-      }
+    // Grade is now derived from marks and should be up-to-date in the subject object
+    // by the time this function is called, due to reactive updates in the form.
+    // However, as a fallback or for direct calls, we can derive it here too.
+    const currentGrade = subject.grade; // Assumes subject.grade is already correctly derived
+
+    if (subject.credits > 0 && currentGrade && currentGrade in gradePoints) {
+      totalCreditPoints += gradePoints[currentGrade] * subject.credits;
+      totalCredits += subject.credits;
     }
   });
 
@@ -66,7 +84,13 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
 
   semesters.forEach((semester, index) => {
     if (semester.subjects && semester.subjects.length > 0) {
-      const { sgpa, totalCredits: semesterTotalCredits } = calculateSGPA(semester.subjects);
+      // Ensure each subject's grade is derived from its marks before SGPA calculation
+      const subjectsWithDerivedGrades = semester.subjects.map(sub => ({
+        ...sub,
+        grade: getGradeFromMarks(sub.marksObtained) 
+      }));
+      const { sgpa, totalCredits: semesterTotalCredits } = calculateSGPA(subjectsWithDerivedGrades);
+      
       semesterSGPAs.push({ sgpa, totalCredits: semesterTotalCredits, semesterIndex: index });
       if (semesterTotalCredits > 0) {
         overallTotalCreditPoints += sgpa * semesterTotalCredits;

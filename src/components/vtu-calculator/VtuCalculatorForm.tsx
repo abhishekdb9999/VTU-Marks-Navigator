@@ -3,23 +3,26 @@
 
 import type * as React from "react";
 import { useEffect, useState, useMemo } from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalculatorFormSchema, GRADE_OPTIONS } from "@/types/vtuCalculator";
+import { CalculatorFormSchema } from "@/types/vtuCalculator";
 import type { CalculatorFormData, Subject, Semester, SemesterResult, OverallResult, Grade } from "@/types/vtuCalculator";
-import { calculateSGPA, calculateCGPA, gradePoints } from "@/lib/vtuUtils";
+import { calculateSGPA, calculateCGPA, getGradeFromMarks } from "@/lib/vtuUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon, TrendingUp, PieChartIcon } from "lucide-react";
+import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon, TrendingUp, PieChartIcon, CheckCircle } from "lucide-react";
 import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
+
+const DEFAULT_SUBJECT_MARKS = 75; // Default marks for a new subject (Grade B)
+const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
+const DEFAULT_SUBJECT_CREDITS = 4;
 
 export default function VtuCalculatorForm() {
   const [calculatedSGPAs, setCalculatedSGPAs] = useState<SemesterResult[]>([]);
@@ -32,15 +35,21 @@ export default function VtuCalculatorForm() {
     resolver: zodResolver(CalculatorFormSchema),
     defaultValues: {
       numberOfSemesters: 1,
-      semesters: [{ subjects: [{ credits: 4, grade: "S" }] }],
+      semesters: [{ 
+        subjects: [{ 
+          credits: DEFAULT_SUBJECT_CREDITS, 
+          marksObtained: DEFAULT_SUBJECT_MARKS, 
+          grade: DEFAULT_SUBJECT_GRADE 
+        }] 
+      }],
     },
-    mode: "onChange", // Validate on change for better feedback
+    mode: "onChange", 
   });
 
-  const { fields: semesterFields, append: appendSemester, remove: removeSemester, update: updateSemester } = useFieldArray({
+  const { fields: semesterFields, append: appendSemester, remove: removeSemester } = useFieldArray({
     control: form.control,
     name: "semesters",
-    keyName: "semesterId" // Use a different key name to avoid conflict with subject id
+    keyName: "semesterId" 
   });
 
   const numberOfSemestersWatched = form.watch("numberOfSemesters");
@@ -52,9 +61,14 @@ export default function VtuCalculatorForm() {
 
     if (currentLength < targetLength) {
       for (let i = currentLength; i < targetLength; i++) {
-        appendSemester({ subjects: [{ credits: 4, grade: "S" }] });
+        appendSemester({ 
+          subjects: [{ 
+            credits: DEFAULT_SUBJECT_CREDITS, 
+            marksObtained: DEFAULT_SUBJECT_MARKS, 
+            grade: DEFAULT_SUBJECT_GRADE 
+          }] 
+        });
       }
-      // Open the last added semester
       if (targetLength > 0) {
         setActiveAccordionItem(`semester-${targetLength - 1}`);
       }
@@ -62,7 +76,6 @@ export default function VtuCalculatorForm() {
       for (let i = currentLength; i > targetLength; i--) {
         removeSemester(i - 1);
       }
-       // If current open semester is removed, open the new last one or none
       if (activeAccordionItem && parseInt(activeAccordionItem.split('-')[1]) >= targetLength) {
         setActiveAccordionItem(targetLength > 0 ? `semester-${targetLength - 1}` : undefined);
       }
@@ -71,23 +84,34 @@ export default function VtuCalculatorForm() {
 
 
   const handleCalculateResults = () => {
-    const formData = form.getValues();
-    if (!formData.semesters || formData.semesters.length === 0) {
-      setCalculatedSGPAs([]);
-      setCalculatedCGPA(null);
-      setAllSemestersDataForChart([]);
-      return;
-    }
-    
-    const { cgpa, totalOverallCredits, semesterSGPAs: sgpas } = calculateCGPA(formData.semesters);
-    setCalculatedSGPAs(sgpas.map(s => ({ ...s, sgpa: parseFloat(s.sgpa.toFixed(2)) })));
-    setCalculatedCGPA({ cgpa: parseFloat(cgpa.toFixed(2)), totalOverallCredits });
-    setAllSemestersDataForChart(formData.semesters);
+    // Trigger validation before getting values
+    form.trigger().then(isValid => {
+      if (isValid) {
+        const formData = form.getValues();
+        if (!formData.semesters || formData.semesters.length === 0) {
+          setCalculatedSGPAs([]);
+          setCalculatedCGPA(null);
+          setAllSemestersDataForChart([]);
+          return;
+        }
+        
+        const { cgpa, totalOverallCredits, semesterSGPAs: sgpas } = calculateCGPA(formData.semesters);
+        setCalculatedSGPAs(sgpas.map(s => ({ ...s, sgpa: parseFloat(s.sgpa.toFixed(2)) })));
+        setCalculatedCGPA({ cgpa: parseFloat(cgpa.toFixed(2)), totalOverallCredits });
+        setAllSemestersDataForChart(formData.semesters);
+      }
+    });
   };
+  
 
   const semesterSGPAsMemo = useMemo(() => {
     return semestersWatched.map((semester, index) => {
-      const { sgpa, totalCredits } = calculateSGPA(semester.subjects);
+      // Ensure grades are derived from marks before calculating SGPA for memoization
+      const subjectsWithDerivedGrades = semester.subjects.map(sub => ({
+        ...sub,
+        grade: getGradeFromMarks(sub.marksObtained)
+      }));
+      const { sgpa, totalCredits } = calculateSGPA(subjectsWithDerivedGrades);
       return { semesterIndex: index, sgpa, totalCredits };
     });
   }, [semestersWatched]);
@@ -115,7 +139,13 @@ export default function VtuCalculatorForm() {
   const resetForm = () => {
     form.reset({
       numberOfSemesters: 1,
-      semesters: [{ subjects: [{ credits: 4, grade: "S" }] }],
+      semesters: [{ 
+        subjects: [{ 
+          credits: DEFAULT_SUBJECT_CREDITS, 
+          marksObtained: DEFAULT_SUBJECT_MARKS, 
+          grade: DEFAULT_SUBJECT_GRADE 
+        }] 
+      }],
     });
     setCalculatedSGPAs([]);
     setCalculatedCGPA(null);
@@ -123,13 +153,12 @@ export default function VtuCalculatorForm() {
     setActiveAccordionItem("semester-0");
   };
   
-  // Update accordion when number of semesters changes via input
   const onNumSemestersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >=0 && value <= 10 ) { // Max 10 semesters
+    if (!isNaN(value) && value >=0 && value <= 10 ) { 
         form.setValue('numberOfSemesters', value, { shouldValidate: true });
     } else if (e.target.value === "") {
-        form.setValue('numberOfSemesters', 0); // Allow empty to be 0
+        form.setValue('numberOfSemesters', 0); 
     }
   };
 
@@ -152,12 +181,12 @@ export default function VtuCalculatorForm() {
                     <Input
                       id="numberOfSemesters"
                       type="number"
-                      min="0" // Allow 0 to clear, effectively
+                      min="0" 
                       max="10"
                       placeholder="e.g., 8"
                       {...field}
-                      onChange={onNumSemestersChange} // Use custom handler
-                      value={field.value === 0 && numberOfSemestersWatched === 0 ? "" : field.value} // Show empty if 0
+                      onChange={onNumSemestersChange} 
+                      value={field.value === 0 && numberOfSemestersWatched === 0 ? "" : field.value} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -178,7 +207,8 @@ export default function VtuCalculatorForm() {
             {semesterFields.map((semesterField, semesterIndex) => (
               <SemesterAccordionItem
                 key={semesterField.semesterId}
-                form={form}
+                control={form.control}
+                formSetValue={form.setValue}
                 semesterIndex={semesterIndex}
                 sgpaInfo={semesterSGPAsMemo[semesterIndex]}
               />
@@ -213,14 +243,15 @@ export default function VtuCalculatorForm() {
 
 
 interface SemesterAccordionItemProps {
-  form: any; // React Hook Form's form object
+  control: any; 
+  formSetValue: Function;
   semesterIndex: number;
   sgpaInfo: { sgpa: number; totalCredits: number } | undefined;
 }
 
-function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccordionItemProps) {
+function SemesterAccordionItem({ control, formSetValue, semesterIndex, sgpaInfo }: SemesterAccordionItemProps) {
   const { fields: subjectFields, append: appendSubject, remove: removeSubject } = useFieldArray({
-    control: form.control,
+    control: control,
     name: `semesters.${semesterIndex}.subjects`,
     keyName: "subjectId"
   });
@@ -243,76 +274,24 @@ function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccord
       <AccordionContent className="px-6 pb-6 pt-0">
         <div className="space-y-4">
           {subjectFields.map((subjectField, subjectIndex) => (
-            <Card key={subjectField.subjectId} className="p-4 bg-background/50">
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end">
-                <FormField
-                  control={form.control}
-                  name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Credits</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="1" max="6" placeholder="e.g., 4" {...field} 
-                         onChange={(e) => field.onChange(parseInt(e.target.value,10) || 0 )} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`semesters.${semesterIndex}.subjects.${subjectIndex}.marksObtained`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marks (Optional)</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" max="100" placeholder="e.g., 75" {...field} 
-                         onChange={(e) => field.onChange(parseInt(e.target.value,10) || undefined )} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`semesters.${semesterIndex}.subjects.${subjectIndex}.grade`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Grade</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select grade" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {GRADE_OPTIONS.map(grade => (
-                            <SelectItem key={grade} value={grade}>{grade} ({gradePoints[grade as Grade]})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeSubject(subjectIndex)}
-                  className="text-destructive hover:bg-destructive/10"
-                  aria-label="Remove subject"
-                  disabled={subjectFields.length <= 1}
-                >
-                  <Trash2 className="h-5 w-5" />
-                </Button>
-              </div>
-            </Card>
+            <SubjectItem
+              key={subjectField.subjectId}
+              control={control}
+              formSetValue={formSetValue}
+              semesterIndex={semesterIndex}
+              subjectIndex={subjectIndex}
+              onRemove={() => removeSubject(subjectIndex)}
+              isRemoveDisabled={subjectFields.length <= 1}
+            />
           ))}
         </div>
         <Button
           type="button"
-          onClick={() => appendSubject({ credits: 4, grade: "S" })}
+          onClick={() => appendSubject({ 
+            credits: DEFAULT_SUBJECT_CREDITS, 
+            marksObtained: DEFAULT_SUBJECT_MARKS, 
+            grade: DEFAULT_SUBJECT_GRADE 
+          })}
           variant="outline"
           className="mt-4"
         >
@@ -322,6 +301,101 @@ function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccord
     </AccordionItem>
   );
 }
+
+interface SubjectItemProps {
+  control: any;
+  formSetValue: Function;
+  semesterIndex: number;
+  subjectIndex: number;
+  onRemove: () => void;
+  isRemoveDisabled: boolean;
+}
+
+function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRemove, isRemoveDisabled }: SubjectItemProps) {
+  const marksPath = `semesters.${semesterIndex}.subjects.${subjectIndex}.marksObtained` as const;
+  const gradePath = `semesters.${semesterIndex}.subjects.${subjectIndex}.grade` as const;
+  
+  const marksValue = useWatch({ control, name: marksPath });
+  
+  useEffect(() => {
+    if (marksValue !== undefined && !isNaN(marksValue)) {
+      const newGrade = getGradeFromMarks(marksValue);
+      formSetValue(gradePath, newGrade, { shouldValidate: false, shouldDirty: true });
+    }
+  }, [marksValue, formSetValue, gradePath]);
+
+  const currentGrade = useWatch({ control, name: gradePath });
+
+  return (
+    <Card className="p-4 bg-background/50">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start"> {/* Changed items-end to items-start */}
+        <FormField
+          control={control}
+          name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Credits</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  min="1" max="6" 
+                  placeholder="e.g., 4" 
+                  {...field} 
+                  onChange={(e) => field.onChange(parseInt(e.target.value,10) || 0 )} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={marksPath}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Marks Obtained (0-100)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  min="0" max="100" 
+                  placeholder="e.g., 75" {...field} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      field.onChange(undefined); // Allow Zod to catch required
+                    } else {
+                      const numVal = parseInt(val, 10);
+                      field.onChange(isNaN(numVal) ? undefined : numVal);
+                    }
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormItem>
+          <FormLabel>Calculated Grade</FormLabel>
+          <div className="h-10 flex items-center px-3 py-2 text-sm rounded-md border border-input bg-muted">
+            {currentGrade || "N/A"}
+          </div>
+        </FormItem>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="text-destructive hover:bg-destructive/10 self-end" // Align button to bottom
+          aria-label="Remove subject"
+          disabled={isRemoveDisabled}
+        >
+          <Trash2 className="h-5 w-5" />
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 
 interface ResultsDisplayProps {
   sgpas: SemesterResult[];
@@ -388,3 +462,4 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
+
