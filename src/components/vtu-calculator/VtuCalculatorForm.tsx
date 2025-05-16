@@ -244,7 +244,7 @@ function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccord
         <div className="space-y-4">
           {subjectFields.map((subjectField, subjectIndex) => (
             <Card key={subjectField.subjectId} className="p-4 bg-background/50">
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end">
                 <FormField
                   control={form.control}
                   name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
@@ -252,7 +252,22 @@ function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccord
                     <FormItem>
                       <FormLabel>Credits</FormLabel>
                       <FormControl>
-                        <Input type="number" min="1" max="6" placeholder="e.g., 4" {...field} />
+                        <Input type="number" min="1" max="6" placeholder="e.g., 4" {...field} 
+                         onChange={(e) => field.onChange(parseInt(e.target.value,10) || 0 )} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`semesters.${semesterIndex}.subjects.${subjectIndex}.marksObtained`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Marks (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" max="100" placeholder="e.g., 75" {...field} 
+                         onChange={(e) => field.onChange(parseInt(e.target.value,10) || undefined )} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
