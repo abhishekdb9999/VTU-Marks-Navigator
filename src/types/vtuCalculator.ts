@@ -1,7 +1,7 @@
 
 import { z } from 'zod';
 
-export const GRADE_OPTIONS = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const;
+export const GRADE_OPTIONS = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'FAIL', 'AB'] as const;
 export const GradeSchema = z.enum(GRADE_OPTIONS);
 export type Grade = z.infer<typeof GradeSchema>;
 
@@ -40,3 +40,4 @@ export interface OverallResult {
   cgpa: number;
   totalOverallCredits: number;
 }
+

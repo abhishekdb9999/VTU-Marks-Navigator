@@ -8,7 +8,9 @@ export const gradePoints: Record<Grade, number> = {
   C: 7,
   D: 6,
   E: 5,
-  F: 0,
+  F: 4,    // Updated from 0 to 4
+  FAIL: 0, // New grade for actual fail
+  AB: 0,   // New grade for absent
 };
 
 export interface CalculatedSemester {
@@ -27,8 +29,11 @@ export function calculateSGPA(subjects: Subject[]): { sgpa: number; totalCredits
 
   subjects.forEach(subject => {
     if (subject.credits > 0 && subject.grade) {
-      totalCreditPoints += gradePoints[subject.grade] * subject.credits;
-      totalCredits += subject.credits;
+      // Ensure the grade exists in gradePoints before accessing it
+      if (subject.grade in gradePoints) {
+        totalCreditPoints += gradePoints[subject.grade] * subject.credits;
+        totalCredits += subject.credits;
+      }
     }
   });
 
@@ -45,7 +50,7 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
   }
 
   let overallTotalCreditPoints = 0;
-  let overallTotalCredits = 0;
+  let overallTotalCreditsCalculated = 0; // Renamed to avoid conflict with returned property name
   const semesterSGPAs: CalculatedSemester[] = [];
 
   semesters.forEach((semester, index) => {
@@ -54,20 +59,20 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
       semesterSGPAs.push({ sgpa, totalCredits: semesterTotalCredits, semesterIndex: index });
       if (semesterTotalCredits > 0) {
         overallTotalCreditPoints += sgpa * semesterTotalCredits;
-        overallTotalCredits += semesterTotalCredits;
+        overallTotalCreditsCalculated += semesterTotalCredits;
       }
     } else {
        semesterSGPAs.push({ sgpa: 0, totalCredits: 0, semesterIndex: index });
     }
   });
 
-  if (overallTotalCredits === 0) {
+  if (overallTotalCreditsCalculated === 0) {
     return { cgpa: 0, totalOverallCredits: 0, semesterSGPAs };
   }
 
   return {
-    cgpa: parseFloat((overallTotalCreditPoints / overallTotalCredits).toFixed(2)),
-    totalOverallCredits: overallTotalCredits,
+    cgpa: parseFloat((overallTotalCreditPoints / overallTotalCreditsCalculated).toFixed(2)),
+    totalOverallCredits: overallTotalCreditsCalculated,
     semesterSGPAs
   };
 }

@@ -21,8 +21,10 @@ const gradeColors: Record<Grade, string> = {
   B: "hsl(var(--chart-3))",
   C: "hsl(var(--chart-4))",
   D: "hsl(var(--chart-5))",
-  E: "hsl(var(--muted-foreground))", // Using muted for E
-  F: "hsl(var(--destructive))",    // Using destructive for F
+  E: "hsl(var(--accent))",      // Updated color
+  F: "hsl(var(--primary))",    // Grade F (4 points) - Updated color
+  FAIL: "hsl(var(--destructive))", // New FAIL grade (0 points)
+  AB: "hsl(var(--muted))",         // New AB grade (0 points)
 };
 
 const chartConfigBase = GRADE_OPTIONS.reduce((acc, grade) => {
@@ -38,12 +40,12 @@ const chartConfig = chartConfigBase satisfies ChartConfig;
 
 export function GradeDistributionChart({ allSemestersData }: GradeDistributionChartProps) {
   const gradeCounts = useMemo(() => {
-    const counts: Record<Grade, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+    const counts: Record<Grade, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FAIL: 0, AB: 0 };
     let totalSubjects = 0;
 
     allSemestersData.forEach(semester => {
       semester.subjects.forEach(subject => {
-        if (subject.grade) {
+        if (subject.grade && subject.grade in counts) { // Check if grade is a valid key
           counts[subject.grade]++;
           totalSubjects++;
         }
