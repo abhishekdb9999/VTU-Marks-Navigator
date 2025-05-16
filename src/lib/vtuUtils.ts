@@ -13,6 +13,18 @@ export const gradePoints: Record<Grade, number> = {
   AB: 0,
 };
 
+export const marksRange: Record<Grade, string> = {
+  S: '90 – 100',
+  A: '80 – 89',
+  B: '70 – 79',
+  C: '60 – 69',
+  D: '50 – 59',
+  E: '45 – 49',
+  F: '40 – 44',
+  FAIL: '< 40',
+  AB: 'Absent',
+};
+
 export interface CalculatedSemester {
   sgpa: number;
   totalCredits: number;
