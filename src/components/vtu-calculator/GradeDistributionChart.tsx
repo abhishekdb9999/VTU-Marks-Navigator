@@ -21,10 +21,10 @@ const gradeColors: Record<Grade, string> = {
   B: "hsl(var(--chart-3))",
   C: "hsl(var(--chart-4))",
   D: "hsl(var(--chart-5))",
-  E: "hsl(var(--accent))",      // Updated color
-  F: "hsl(var(--primary))",    // Grade F (4 points) - Updated color
-  FAIL: "hsl(var(--destructive))", // New FAIL grade (0 points)
-  AB: "hsl(var(--muted))",         // New AB grade (0 points)
+  E: "hsl(var(--accent))",
+  F: "hsl(var(--primary))", 
+  FAIL: "hsl(var(--destructive))",
+  AB: "hsl(var(--muted))", 
 };
 
 const chartConfigBase = GRADE_OPTIONS.reduce((acc, grade) => {
@@ -40,12 +40,16 @@ const chartConfig = chartConfigBase satisfies ChartConfig;
 
 export function GradeDistributionChart({ allSemestersData }: GradeDistributionChartProps) {
   const gradeCounts = useMemo(() => {
-    const counts: Record<Grade, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FAIL: 0, AB: 0 };
+    const counts = GRADE_OPTIONS.reduce((acc, gradeOption) => {
+      acc[gradeOption as Grade] = 0;
+      return acc;
+    }, {} as Record<Grade, number>);
+    
     let totalSubjects = 0;
 
     allSemestersData.forEach(semester => {
       semester.subjects.forEach(subject => {
-        if (subject.grade && subject.grade in counts) { // Check if grade is a valid key
+        if (subject.grade && subject.grade in counts) { 
           counts[subject.grade]++;
           totalSubjects++;
         }
@@ -88,7 +92,7 @@ export function GradeDistributionChart({ allSemestersData }: GradeDistributionCh
               const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
               const x = cx + radius * Math.cos(-midAngle * RADIAN);
               const y = cy + radius * Math.sin(-midAngle * RADIAN);
-              return (percent * 100) > 5 ? ( // Only show label if percent > 5%
+              return (percent * 100) > 5 ? ( 
                 <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
                   {`${gradeCounts[index].name} (${(percent * 100).toFixed(0)}%)`}
                 </text>

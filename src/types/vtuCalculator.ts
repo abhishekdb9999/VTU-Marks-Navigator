@@ -40,4 +40,3 @@ export interface OverallResult {
   cgpa: number;
   totalOverallCredits: number;
 }
-
