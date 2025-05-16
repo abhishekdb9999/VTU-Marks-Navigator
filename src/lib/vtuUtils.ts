@@ -1,3 +1,4 @@
+
 import type { Subject, Semester, Grade } from '@/types/vtuCalculator';
 
 export const gradePoints: Record<Grade, number> = {
@@ -64,9 +65,10 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
     return { cgpa: 0, totalOverallCredits: 0, semesterSGPAs };
   }
 
-  return { 
-    cgpa: parseFloat((overallTotalCreditPoints / overallTotalCredits).toFixed(2)), 
-    totalOverallCredits,
+  return {
+    cgpa: parseFloat((overallTotalCreditPoints / overallTotalCredits).toFixed(2)),
+    totalOverallCredits: overallTotalCredits,
     semesterSGPAs
   };
 }
+
