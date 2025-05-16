@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from "react";
@@ -5,7 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalculatorFormSchema, GRADE_OPTIONS } from "@/types/vtuCalculator";
-import type { CalculatorFormData, Subject, SemesterResult, OverallResult, Grade } from "@/types/vtuCalculator";
+import type { CalculatorFormData, Subject, Semester, SemesterResult, OverallResult, Grade } from "@/types/vtuCalculator";
 import { calculateSGPA, calculateCGPA, gradePoints } from "@/lib/vtuUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +15,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon } from "lucide-react";
+import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon, TrendingUp, PieChartIcon } from "lucide-react";
 import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
+import { CgpaTrendChart } from "./CgpaTrendChart";
+import { GradeDistributionChart } from "./GradeDistributionChart";
 
 export default function VtuCalculatorForm() {
   const [calculatedSGPAs, setCalculatedSGPAs] = useState<SemesterResult[]>([]);
   const [calculatedCGPA, setCalculatedCGPA] = useState<OverallResult | null>(null);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>("semester-0");
+  const [allSemestersDataForChart, setAllSemestersDataForChart] = useState<Semester[]>([]);
 
 
   const form = useForm<CalculatorFormData>({
@@ -71,12 +75,14 @@ export default function VtuCalculatorForm() {
     if (!formData.semesters || formData.semesters.length === 0) {
       setCalculatedSGPAs([]);
       setCalculatedCGPA(null);
+      setAllSemestersDataForChart([]);
       return;
     }
     
     const { cgpa, totalOverallCredits, semesterSGPAs: sgpas } = calculateCGPA(formData.semesters);
     setCalculatedSGPAs(sgpas.map(s => ({ ...s, sgpa: parseFloat(s.sgpa.toFixed(2)) })));
     setCalculatedCGPA({ cgpa: parseFloat(cgpa.toFixed(2)), totalOverallCredits });
+    setAllSemestersDataForChart(formData.semesters);
   };
 
   const semesterSGPAsMemo = useMemo(() => {
@@ -113,6 +119,7 @@ export default function VtuCalculatorForm() {
     });
     setCalculatedSGPAs([]);
     setCalculatedCGPA(null);
+    setAllSemestersDataForChart([]);
     setActiveAccordionItem("semester-0");
   };
   
@@ -191,7 +198,11 @@ export default function VtuCalculatorForm() {
         )}
 
         {(calculatedSGPAs.length > 0 || calculatedCGPA) && (
-          <ResultsDisplay sgpas={calculatedSGPAs} cgpa={calculatedCGPA} />
+          <ResultsDisplay 
+            sgpas={calculatedSGPAs} 
+            cgpa={calculatedCGPA} 
+            allSemestersData={allSemestersDataForChart} 
+          />
         )}
         
         <GradePointTable />
@@ -300,9 +311,10 @@ function SemesterAccordionItem({ form, semesterIndex, sgpaInfo }: SemesterAccord
 interface ResultsDisplayProps {
   sgpas: SemesterResult[];
   cgpa: OverallResult | null;
+  allSemestersData: Semester[];
 }
 
-function ResultsDisplay({ sgpas, cgpa }: ResultsDisplayProps) {
+function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) {
   if (sgpas.length === 0 && !cgpa) return null;
 
   return (
@@ -336,6 +348,27 @@ function ResultsDisplay({ sgpas, cgpa }: ResultsDisplayProps) {
             <p className="text-sm text-muted-foreground">Based on {cgpa.totalOverallCredits} total credits</p>
           </div>
         )}
+        
+        {sgpas.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-center flex items-center justify-center"><TrendingUp className="mr-2 h-5 w-5 text-primary" />CGPA Trend</h3>
+              <CgpaTrendChart semesterResults={sgpas} />
+            </div>
+          </>
+        )}
+
+        {allSemestersData.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-center flex items-center justify-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary" />Overall Grade Distribution</h3>
+              <GradeDistributionChart allSemestersData={allSemestersData} />
+            </div>
+          </>
+        )}
+
       </CardContent>
     </Card>
   );
