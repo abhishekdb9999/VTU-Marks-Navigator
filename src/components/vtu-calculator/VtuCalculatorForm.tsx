@@ -20,8 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
 
-const DEFAULT_SUBJECT_MARKS = 0; // Default marks for a new subject
-const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS); // Should be 'FAIL'
+const DEFAULT_SUBJECT_MARKS = 0; 
+const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
 const DEFAULT_SUBJECT_CREDITS = 4;
 
 export default function VtuCalculatorForm() {
@@ -84,7 +84,6 @@ export default function VtuCalculatorForm() {
 
 
   const handleCalculateResults = () => {
-    // Trigger validation before getting values
     form.trigger().then(isValid => {
       if (isValid) {
         const formData = form.getValues();
@@ -106,7 +105,6 @@ export default function VtuCalculatorForm() {
 
   const semesterSGPAsMemo = useMemo(() => {
     return semestersWatched.map((semester, index) => {
-      // Ensure grades are derived from marks before calculating SGPA for memoization
       const subjectsWithDerivedGrades = semester.subjects.map(sub => ({
         ...sub,
         grade: getGradeFromMarks(sub.marksObtained)
@@ -277,7 +275,7 @@ function SemesterAccordionItem({ control, formSetValue, semesterIndex, sgpaInfo 
             <SubjectItem
               key={subjectField.subjectId}
               control={control}
-              formSetValue={formSetValue}
+              formSetValue={formSetValue} // Changed from form.setValue to the prop formSetValue
               semesterIndex={semesterIndex}
               subjectIndex={subjectIndex}
               onRemove={() => removeSubject(subjectIndex)}
@@ -312,20 +310,17 @@ interface SubjectItemProps {
 }
 
 function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRemove, isRemoveDisabled }: SubjectItemProps) {
+  const [hasBeenEdited, setHasBeenEdited] = useState(false);
   const marksPath = `semesters.${semesterIndex}.subjects.${subjectIndex}.marksObtained` as const;
   const gradePath = `semesters.${semesterIndex}.subjects.${subjectIndex}.grade` as const;
   
   const marksValue = useWatch({ control, name: marksPath });
   
   useEffect(() => {
-    // Update grade when marksValue changes and is a valid number
     if (marksValue !== undefined && !isNaN(marksValue)) {
       const newGrade = getGradeFromMarks(marksValue);
       formSetValue(gradePath, newGrade, { shouldValidate: false, shouldDirty: true });
     } else if (marksValue === undefined) { 
-      // Handle case where marks might be cleared or become undefined
-      // (e.g., if user deletes the input content)
-      // Set to default fail grade or appropriate initial grade
       formSetValue(gradePath, getGradeFromMarks(0), { shouldValidate: false, shouldDirty: true });
     }
   }, [marksValue, formSetValue, gradePath]);
@@ -335,7 +330,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
 
   return (
     <Card className="p-4 bg-background/50">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start"> {/* Changed items-end to items-start */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start">
         <FormField
           control={control}
           name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
@@ -365,18 +360,21 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
                 <Input 
                   type="number" 
                   min="0" max="100" 
-                  placeholder="e.g., 75" {...field} 
+                  placeholder="e.g., 75" 
+                  {...field} 
                   onChange={(e) => {
+                    if (!hasBeenEdited) {
+                      setHasBeenEdited(true);
+                    }
                     const val = e.target.value;
                     if (val === "") {
-                      // Allow field to be empty, Zod will catch if required (it is)
-                      // For immediate grade update, we can treat empty as 0 or a specific state
                       field.onChange(undefined); 
                     } else {
                       const numVal = parseInt(val, 10);
                       field.onChange(isNaN(numVal) ? undefined : numVal);
                     }
                   }}
+                  value={field.value === undefined ? '' : String(field.value)}
                 />
               </FormControl>
               <FormMessage />
@@ -386,7 +384,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
         <FormItem>
           <FormLabel>Calculated Grade</FormLabel>
           <div className="h-10 flex items-center px-3 py-2 text-sm rounded-md border border-input bg-muted">
-            {currentGrade || getGradeFromMarks(0)}
+            {(!hasBeenEdited && marksValue === DEFAULT_SUBJECT_MARKS) ? '' : (currentGrade || '')}
           </div>
         </FormItem>
         <Button
@@ -394,7 +392,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="text-destructive hover:bg-destructive/10 self-end" // Align button to bottom
+          className="text-destructive hover:bg-destructive/10 self-end"
           aria-label="Remove subject"
           disabled={isRemoveDisabled}
         >
