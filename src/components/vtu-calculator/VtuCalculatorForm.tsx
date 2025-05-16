@@ -20,8 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
 
-const DEFAULT_SUBJECT_MARKS = 75; // Default marks for a new subject (Grade B)
-const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
+const DEFAULT_SUBJECT_MARKS = 0; // Default marks for a new subject
+const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS); // Should be 'FAIL'
 const DEFAULT_SUBJECT_CREDITS = 4;
 
 export default function VtuCalculatorForm() {
@@ -318,11 +318,18 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
   const marksValue = useWatch({ control, name: marksPath });
   
   useEffect(() => {
+    // Update grade when marksValue changes and is a valid number
     if (marksValue !== undefined && !isNaN(marksValue)) {
       const newGrade = getGradeFromMarks(marksValue);
       formSetValue(gradePath, newGrade, { shouldValidate: false, shouldDirty: true });
+    } else if (marksValue === undefined) { 
+      // Handle case where marks might be cleared or become undefined
+      // (e.g., if user deletes the input content)
+      // Set to default fail grade or appropriate initial grade
+      formSetValue(gradePath, getGradeFromMarks(0), { shouldValidate: false, shouldDirty: true });
     }
   }, [marksValue, formSetValue, gradePath]);
+
 
   const currentGrade = useWatch({ control, name: gradePath });
 
@@ -362,7 +369,9 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === "") {
-                      field.onChange(undefined); // Allow Zod to catch required
+                      // Allow field to be empty, Zod will catch if required (it is)
+                      // For immediate grade update, we can treat empty as 0 or a specific state
+                      field.onChange(undefined); 
                     } else {
                       const numVal = parseInt(val, 10);
                       field.onChange(isNaN(numVal) ? undefined : numVal);
@@ -377,7 +386,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
         <FormItem>
           <FormLabel>Calculated Grade</FormLabel>
           <div className="h-10 flex items-center px-3 py-2 text-sm rounded-md border border-input bg-muted">
-            {currentGrade || "N/A"}
+            {currentGrade || getGradeFromMarks(0)}
           </div>
         </FormItem>
         <Button
