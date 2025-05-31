@@ -9,7 +9,7 @@ export function GradePointTable() {
   // Filter out 'AB' and 'FAIL' grades for display in this table, as their marks range can be ambiguous or 0.
   // Or, if you want to keep them, ensure marksRange has appropriate values.
   // For now, let's display all defined grades for completeness of the VTU system.
-  const gradesToDisplay = GRADE_OPTIONS;
+  const gradesToDisplay = GRADE_OPTIONS.filter(grade => grade !== 'AB');
 
   return (
     <Card className="mt-6 mb-4 print:hidden">
@@ -37,3 +37,4 @@ export function GradePointTable() {
     </Card>
   );
 }
+
