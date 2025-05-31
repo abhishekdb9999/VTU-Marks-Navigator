@@ -19,10 +19,10 @@ export const marksRange: Record<Grade, string> = {
   A: '80 – 89',
   B: '70 – 79',
   C: '60 – 69',
-  D: '50 – 59',
-  E: '45 – 49',
-  F: '40 – 44',
-  FAIL: '< 40',
+  D: '55 – 59', // Updated
+  E: '50 – 54', // Updated
+  F: '40 – 49', // Updated
+  FAIL: '0 – 39',  // Updated (more specific than < 40)
   AB: 'Absent',
 };
 
@@ -31,10 +31,10 @@ export function getGradeFromMarks(marks: number): Grade {
   if (marks >= 80 && marks <= 89) return 'A';
   if (marks >= 70 && marks <= 79) return 'B';
   if (marks >= 60 && marks <= 69) return 'C';
-  if (marks >= 50 && marks <= 59) return 'D';
-  if (marks >= 45 && marks <= 49) return 'E';
-  if (marks >= 40 && marks <= 44) return 'F';
-  if (marks >= 0 && marks < 40) return 'FAIL';
+  if (marks >= 55 && marks <= 59) return 'D'; // Updated
+  if (marks >= 50 && marks <= 54) return 'E'; // Updated
+  if (marks >= 40 && marks <= 49) return 'F'; // Updated
+  if (marks >= 0 && marks < 40) return 'FAIL'; // Updated
   // Default to FAIL for out-of-range marks, though schema should prevent this.
   return 'FAIL'; 
 }
@@ -58,7 +58,7 @@ export function calculateSGPA(subjects: Subject[]): { sgpa: number; totalCredits
     // Grade is now derived from marks and should be up-to-date in the subject object
     // by the time this function is called, due to reactive updates in the form.
     // However, as a fallback or for direct calls, we can derive it here too.
-    const currentGrade = subject.grade; // Assumes subject.grade is already correctly derived
+    const currentGrade = getGradeFromMarks(subject.marksObtained); // Ensure we use the latest logic
 
     if (subject.credits > 0 && currentGrade && currentGrade in gradePoints) {
       totalCreditPoints += gradePoints[currentGrade] * subject.credits;
