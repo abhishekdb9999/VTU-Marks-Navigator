@@ -34,7 +34,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="font-mono italic hover:text-primary hover:underline"
             >
-              ABHISHEKDB ❤️
+              ABHISHEKDB ❤️ 👉
             </a>
           </p>
         </footer>
