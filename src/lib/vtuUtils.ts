@@ -22,7 +22,7 @@ export const marksRange: Record<Grade, string> = {
   D: '55 – 59', // Updated
   E: '50 – 54', // Updated
   F: '40 – 49', // Updated
-  FAIL: '0 – 39',  // Updated (more specific than < 40)
+  FAIL: '0 – 39',  // Updated
   AB: 'Absent',
 };
 
@@ -34,7 +34,7 @@ export function getGradeFromMarks(marks: number): Grade {
   if (marks >= 55 && marks <= 59) return 'D'; // Updated
   if (marks >= 50 && marks <= 54) return 'E'; // Updated
   if (marks >= 40 && marks <= 49) return 'F'; // Updated
-  if (marks >= 0 && marks < 40) return 'FAIL'; // Updated
+  if (marks >= 0 && marks <= 39) return 'FAIL'; // Updated
   // Default to FAIL for out-of-range marks, though schema should prevent this.
   return 'FAIL'; 
 }
@@ -55,10 +55,7 @@ export function calculateSGPA(subjects: Subject[]): { sgpa: number; totalCredits
   let totalCredits = 0;
 
   subjects.forEach(subject => {
-    // Grade is now derived from marks and should be up-to-date in the subject object
-    // by the time this function is called, due to reactive updates in the form.
-    // However, as a fallback or for direct calls, we can derive it here too.
-    const currentGrade = getGradeFromMarks(subject.marksObtained); // Ensure we use the latest logic
+    const currentGrade = getGradeFromMarks(subject.marksObtained); 
 
     if (subject.credits > 0 && currentGrade && currentGrade in gradePoints) {
       totalCreditPoints += gradePoints[currentGrade] * subject.credits;
@@ -84,7 +81,6 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
 
   semesters.forEach((semester, index) => {
     if (semester.subjects && semester.subjects.length > 0) {
-      // Ensure each subject's grade is derived from its marks before SGPA calculation
       const subjectsWithDerivedGrades = semester.subjects.map(sub => ({
         ...sub,
         grade: getGradeFromMarks(sub.marksObtained) 
