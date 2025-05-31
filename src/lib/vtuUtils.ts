@@ -19,10 +19,10 @@ export const marksRange: Record<Grade, string> = {
   A: '80 – 89',
   B: '70 – 79',
   C: '60 – 69',
-  D: '55 – 59', // Updated
-  E: '50 – 54', // Updated
-  F: '40 – 49', // Updated
-  FAIL: '0 – 39',  // Updated
+  D: '55 – 59',
+  E: '50 – 54',
+  F: '40 – 49',
+  FAIL: '0 – 39',
   AB: 'Absent',
 };
 
@@ -31,11 +31,10 @@ export function getGradeFromMarks(marks: number): Grade {
   if (marks >= 80 && marks <= 89) return 'A';
   if (marks >= 70 && marks <= 79) return 'B';
   if (marks >= 60 && marks <= 69) return 'C';
-  if (marks >= 55 && marks <= 59) return 'D'; // Updated
-  if (marks >= 50 && marks <= 54) return 'E'; // Updated
-  if (marks >= 40 && marks <= 49) return 'F'; // Updated
-  if (marks >= 0 && marks <= 39) return 'FAIL'; // Updated
-  // Default to FAIL for out-of-range marks, though schema should prevent this.
+  if (marks >= 55 && marks <= 59) return 'D';
+  if (marks >= 50 && marks <= 54) return 'E';
+  if (marks >= 40 && marks <= 49) return 'F';
+  if (marks >= 0 && marks <= 39) return 'FAIL';
   return 'FAIL'; 
 }
 
@@ -107,3 +106,4 @@ export function calculateCGPA(semesters: Semester[]): { cgpa: number; totalOvera
     semesterSGPAs
   };
 }
+
