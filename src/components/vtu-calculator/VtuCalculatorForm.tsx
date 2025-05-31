@@ -19,7 +19,7 @@ import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
-import html2pdf from 'html2pdf.js';
+// import html2pdf from 'html2pdf.js'; // Removed static import
 
 const DEFAULT_SUBJECT_MARKS = 0; 
 const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
@@ -328,7 +328,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
 
   return (
     <Card className="p-4 bg-background/50">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
         <FormField
           control={control}
           name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
@@ -351,7 +351,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
         <FormField
           control={control}
           name={marksPath}
-          render={({ field }) => ( // field from render prop contains onChange, onBlur, value, etc.
+          render={({ field }) => ( 
             <FormItem>
               <FormLabel>Marks Obtained (0-100)</FormLabel>
               <FormControl>
@@ -403,9 +403,10 @@ interface ResultsDisplayProps {
 function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) {
   if (sgpas.length === 0 && !cgpa) return null;
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const element = document.getElementById('results-to-print');
     if (element) {
+      const html2pdf = (await import('html2pdf.js')).default; // Dynamic import
       const opt = {
         margin:       0.5, // inches
         filename:     'VTU_Calculation_Results.pdf',
@@ -480,3 +481,6 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
+
+
+    
