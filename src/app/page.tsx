@@ -29,7 +29,7 @@ export default function Home() {
             &copy; {new Date().getFullYear()} VTU Marks Navigator. Simplify Your Academic Tracking.
             <br />
             <a
-              href="https://www.instagram.com/your_username_here/"
+              href="https://www.instagram.com/___theabhishek01___/"
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono italic hover:text-primary hover:underline"
