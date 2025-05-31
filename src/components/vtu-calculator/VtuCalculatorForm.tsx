@@ -314,7 +314,6 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
   const gradePath = `semesters.${semesterIndex}.subjects.${subjectIndex}.grade` as const;
   
   const marksValue = useWatch({ control, name: marksPath });
-  const [hasBeenEdited, setHasBeenEdited] = useState(false);
   
   useEffect(() => {
     if (marksValue !== undefined && !isNaN(marksValue)) {
@@ -324,18 +323,6 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
       formSetValue(gradePath, getGradeFromMarks(0), { shouldValidate: false, shouldDirty: true });
     }
   }, [marksValue, formSetValue, gradePath]);
-
-  const handleMarksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHasBeenEdited(true);
-    const val = e.target.value;
-    const field = control.getFieldState(marksPath).field;
-    if (val === "") {
-      field.onChange(undefined);
-    } else {
-      const numVal = parseInt(val, 10);
-      field.onChange(isNaN(numVal) ? undefined : numVal);
-    }
-  };
 
 
   return (
@@ -371,8 +358,16 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
                   type="number"
                   min="0" max="100"
                   placeholder="e.g., 75"
-                  {...field}
-                  onChange={handleMarksChange}
+                  {...field} // field object from RHF render prop includes value, onChange, onBlur, name, ref
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      field.onChange(undefined); // Use field.onChange from render prop
+                    } else {
+                      const numVal = parseInt(val, 10);
+                      field.onChange(isNaN(numVal) ? undefined : numVal); // Use field.onChange
+                    }
+                  }}
                   value={field.value === undefined ? '' : String(field.value)}
                 />
               </FormControl>
@@ -470,4 +465,3 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
-
