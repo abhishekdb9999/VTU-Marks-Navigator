@@ -25,10 +25,9 @@ export default function Home() {
           </CardContent>
         </Card>
         <footer className="text-center mt-10 text-muted-foreground text-sm print:hidden">
-          <p>&copy; {new Date().getFullYear()} VTU Marks Navigator. Developed by ABHISHEKDB. Simplify Your Academic Tracking.</p>
+          <p>&copy; {new Date().getFullYear()} VTU Marks Navigator. Simplify Your Academic Tracking.</p>
         </footer>
       </main>
     </div>
   );
 }
-
