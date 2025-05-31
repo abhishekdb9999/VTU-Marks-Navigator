@@ -19,6 +19,7 @@ import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
+import html2pdf from 'html2pdf.js';
 
 const DEFAULT_SUBJECT_MARKS = 0; 
 const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
@@ -327,7 +328,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
 
   return (
     <Card className="p-4 bg-background/50">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-4 items-end">
         <FormField
           control={control}
           name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
@@ -350,7 +351,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
         <FormField
           control={control}
           name={marksPath}
-          render={({ field }) => (
+          render={({ field }) => ( // field from render prop contains onChange, onBlur, value, etc.
             <FormItem>
               <FormLabel>Marks Obtained (0-100)</FormLabel>
               <FormControl>
@@ -358,14 +359,14 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
                   type="number"
                   min="0" max="100"
                   placeholder="e.g., 75"
-                  {...field} // field object from RHF render prop includes value, onChange, onBlur, name, ref
+                  {...field} 
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const val = e.target.value;
                     if (val === "") {
-                      field.onChange(undefined); // Use field.onChange from render prop
+                      field.onChange(undefined); 
                     } else {
                       const numVal = parseInt(val, 10);
-                      field.onChange(isNaN(numVal) ? undefined : numVal); // Use field.onChange
+                      field.onChange(isNaN(numVal) ? undefined : numVal); 
                     }
                   }}
                   value={field.value === undefined ? '' : String(field.value)}
@@ -375,6 +376,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
             </FormItem>
           )}
         />
+        
         <Button
           type="button"
           variant="ghost"
@@ -402,16 +404,29 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
   if (sgpas.length === 0 && !cgpa) return null;
 
   const handlePrint = () => {
-    window.print();
+    const element = document.getElementById('results-to-print');
+    if (element) {
+      const opt = {
+        margin:       0.5, // inches
+        filename:     'VTU_Calculation_Results.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    } else {
+      console.error("Element with ID 'results-to-print' not found.");
+      // Optionally, show a toast message to the user
+    }
   };
 
   return (
-    <Card className="mt-8 shadow-lg border-accent border-2 print:shadow-none print:border-none print:mt-0">
+    <Card id="results-to-print" className="mt-8 shadow-lg border-accent border-2 print:shadow-none print:border-none print:mt-0">
       <CardHeader className="flex flex-row items-center justify-between print:border-b print:pb-2">
         <CardTitle className="text-2xl text-center text-accent flex-grow">Calculation Results</CardTitle>
         <Button onClick={handlePrint} variant="outline" size="icon" className="ml-4 print:hidden">
           <Printer className="h-5 w-5" />
-          <span className="sr-only">Print Results</span>
+          <span className="sr-only">Download PDF</span>
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
