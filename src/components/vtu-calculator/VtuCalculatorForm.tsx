@@ -19,7 +19,6 @@ import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
 import { GradeDistributionChart } from "./GradeDistributionChart";
-// import html2pdf from 'html2pdf.js'; // Removed static import
 
 const DEFAULT_SUBJECT_MARKS = 0; 
 const DEFAULT_SUBJECT_GRADE = getGradeFromMarks(DEFAULT_SUBJECT_MARKS);
@@ -406,18 +405,21 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
   const handlePrint = async () => {
     const element = document.getElementById('results-to-print');
     if (element) {
-      const html2pdf = (await import('html2pdf.js')).default; // Dynamic import
+      const html2pdf = (await import('html2pdf.js')).default; 
       const opt = {
         margin:       0.5, // inches
         filename:     'VTU_Calculation_Results.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        image:        { type: 'jpeg', quality: 0.95 },
+        html2canvas:  { scale: 1.5, 
+                        useCORS: true, 
+                        logging: false 
+                      },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak:    { mode: 'avoid-all' } 
       };
       html2pdf().from(element).set(opt).save();
     } else {
       console.error("Element with ID 'results-to-print' not found.");
-      // Optionally, show a toast message to the user
     }
   };
 
@@ -481,6 +483,3 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
-
-
-    
