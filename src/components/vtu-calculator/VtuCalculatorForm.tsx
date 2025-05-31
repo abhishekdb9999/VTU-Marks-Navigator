@@ -275,7 +275,7 @@ function SemesterAccordionItem({ control, formSetValue, semesterIndex, sgpaInfo 
             <SubjectItem
               key={subjectField.subjectId}
               control={control}
-              formSetValue={formSetValue} // Changed from form.setValue to the prop formSetValue
+              formSetValue={formSetValue}
               semesterIndex={semesterIndex}
               subjectIndex={subjectIndex}
               onRemove={() => removeSubject(subjectIndex)}
@@ -310,7 +310,6 @@ interface SubjectItemProps {
 }
 
 function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRemove, isRemoveDisabled }: SubjectItemProps) {
-  const [hasBeenEdited, setHasBeenEdited] = useState(false);
   const marksPath = `semesters.${semesterIndex}.subjects.${subjectIndex}.marksObtained` as const;
   const gradePath = `semesters.${semesterIndex}.subjects.${subjectIndex}.grade` as const;
   
@@ -325,12 +324,9 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
     }
   }, [marksValue, formSetValue, gradePath]);
 
-
-  const currentGrade = useWatch({ control, name: gradePath });
-
   return (
     <Card className="p-4 bg-background/50">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
         <FormField
           control={control}
           name={`semesters.${semesterIndex}.subjects.${subjectIndex}.credits`}
@@ -363,9 +359,6 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
                   placeholder="e.g., 75" 
                   {...field} 
                   onChange={(e) => {
-                    if (!hasBeenEdited) {
-                      setHasBeenEdited(true);
-                    }
                     const val = e.target.value;
                     if (val === "") {
                       field.onChange(undefined); 
@@ -381,18 +374,12 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
             </FormItem>
           )}
         />
-        <FormItem>
-          <FormLabel>Calculated Grade</FormLabel>
-          <div className="h-10 flex items-center px-3 py-2 text-sm rounded-md border border-input bg-muted">
-            {(!hasBeenEdited && marksValue === DEFAULT_SUBJECT_MARKS) ? '' : (currentGrade || '')}
-          </div>
-        </FormItem>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="text-destructive hover:bg-destructive/10 self-end"
+          className="text-destructive hover:bg-destructive/10"
           aria-label="Remove subject"
           disabled={isRemoveDisabled}
         >
@@ -469,4 +456,3 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
-
