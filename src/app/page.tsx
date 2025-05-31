@@ -28,7 +28,7 @@ export default function Home() {
           <p>
             &copy; {new Date().getFullYear()} VTU Marks Navigator. Simplify Your Academic Tracking.
             <br />
-            ABHI ❤️
+            ABHISHEKDB ❤️
           </p>
         </footer>
       </main>
