@@ -28,11 +28,11 @@ export default function Home() {
           <p>
             &copy; {new Date().getFullYear()} VTU Marks Navigator. Simplify Your Academic Tracking.
             <br />
-            <a 
-              href="https://www.instagram.com/your_username_here/" 
-              target="_blank" 
+            <a
+              href="https://www.instagram.com/your_username_here/"
+              target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-primary hover:underline"
+              className="font-mono italic hover:text-primary hover:underline"
             >
               ABHISHEKDB ❤️
             </a>
