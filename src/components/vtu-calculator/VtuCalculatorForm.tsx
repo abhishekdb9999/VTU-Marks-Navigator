@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon, TrendingUp, PieChartIcon, CheckCircle } from "lucide-react";
+import { PlusCircle, Trash2, Info, RotateCcw, CalculatorIcon, TrendingUp, PieChartIcon, CheckCircle, Printer } from "lucide-react";
 import { GradePointTable } from "./GradePointTable";
 import { Separator } from "@/components/ui/separator";
 import { CgpaTrendChart } from "./CgpaTrendChart";
@@ -164,7 +164,7 @@ export default function VtuCalculatorForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleCalculateResults)} className="space-y-8">
-        <Card>
+        <Card className="print:hidden">
           <CardHeader>
             <CardTitle className="text-xl">Configuration</CardTitle>
           </CardHeader>
@@ -198,7 +198,7 @@ export default function VtuCalculatorForm() {
           <Accordion 
             type="single" 
             collapsible 
-            className="w-full" 
+            className="w-full print:hidden" 
             value={activeAccordionItem}
             onValueChange={setActiveAccordionItem}
           >
@@ -215,7 +215,7 @@ export default function VtuCalculatorForm() {
         )}
         
         {numberOfSemestersWatched > 0 && (
-          <div className="flex justify-between items-center mt-8 pt-6 border-t">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t print:hidden">
              <Button type="button" onClick={resetForm} variant="outline">
               <RotateCcw className="mr-2 h-4 w-4" /> Reset All
             </Button>
@@ -314,6 +314,7 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
   const gradePath = `semesters.${semesterIndex}.subjects.${subjectIndex}.grade` as const;
   
   const marksValue = useWatch({ control, name: marksPath });
+  const [hasBeenEdited, setHasBeenEdited] = useState(false);
   
   useEffect(() => {
     if (marksValue !== undefined && !isNaN(marksValue)) {
@@ -323,6 +324,19 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
       formSetValue(gradePath, getGradeFromMarks(0), { shouldValidate: false, shouldDirty: true });
     }
   }, [marksValue, formSetValue, gradePath]);
+
+  const handleMarksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHasBeenEdited(true);
+    const val = e.target.value;
+    const field = control.getFieldState(marksPath).field;
+    if (val === "") {
+      field.onChange(undefined);
+    } else {
+      const numVal = parseInt(val, 10);
+      field.onChange(isNaN(numVal) ? undefined : numVal);
+    }
+  };
+
 
   return (
     <Card className="p-4 bg-background/50">
@@ -353,20 +367,12 @@ function SubjectItem({ control, formSetValue, semesterIndex, subjectIndex, onRem
             <FormItem>
               <FormLabel>Marks Obtained (0-100)</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  min="0" max="100" 
-                  placeholder="e.g., 75" 
-                  {...field} 
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      field.onChange(undefined); 
-                    } else {
-                      const numVal = parseInt(val, 10);
-                      field.onChange(isNaN(numVal) ? undefined : numVal);
-                    }
-                  }}
+                 <Input
+                  type="number"
+                  min="0" max="100"
+                  placeholder="e.g., 75"
+                  {...field}
+                  onChange={handleMarksChange}
                   value={field.value === undefined ? '' : String(field.value)}
                 />
               </FormControl>
@@ -400,10 +406,18 @@ interface ResultsDisplayProps {
 function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) {
   if (sgpas.length === 0 && !cgpa) return null;
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <Card className="mt-8 shadow-lg border-accent border-2">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center text-accent">Calculation Results</CardTitle>
+    <Card className="mt-8 shadow-lg border-accent border-2 print:shadow-none print:border-none print:mt-0">
+      <CardHeader className="flex flex-row items-center justify-between print:border-b print:pb-2">
+        <CardTitle className="text-2xl text-center text-accent flex-grow">Calculation Results</CardTitle>
+        <Button onClick={handlePrint} variant="outline" size="icon" className="ml-4 print:hidden">
+          <Printer className="h-5 w-5" />
+          <span className="sr-only">Print Results</span>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
@@ -411,7 +425,7 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
           {sgpas.length > 0 ? (
             <ul className="space-y-2">
               {sgpas.map(item => (
-                <li key={item.semesterIndex} className="flex justify-between items-center p-3 bg-secondary/50 rounded-md">
+                <li key={item.semesterIndex} className="flex justify-between items-center p-3 bg-secondary/50 rounded-md print:bg-transparent print:border-b print:rounded-none">
                   <span className="font-medium">Semester {item.semesterIndex + 1}:</span>
                   <span className="text-primary font-bold text-lg">{item.sgpa.toFixed(2)}</span>
                 </li>
@@ -422,10 +436,10 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
           )}
         </div>
         
-        <Separator />
+        <Separator className="print:hidden" />
 
         {cgpa && (
-          <div className="text-center">
+          <div className="text-center pt-4 print:pt-6">
             <h3 className="text-xl font-semibold mb-2">Overall CGPA</h3>
             <p className="text-4xl font-bold text-accent">{cgpa.cgpa.toFixed(2)}</p>
             <p className="text-sm text-muted-foreground">Based on {cgpa.totalOverallCredits} total credits</p>
@@ -434,8 +448,8 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
         
         {sgpas.length > 0 && (
           <>
-            <Separator />
-            <div className="space-y-2">
+            <Separator className="print:hidden" />
+            <div className="space-y-2 pt-4 print:pt-6">
               <h3 className="text-xl font-semibold text-center flex items-center justify-center"><TrendingUp className="mr-2 h-5 w-5 text-primary" />CGPA Trend</h3>
               <CgpaTrendChart semesterResults={sgpas} />
             </div>
@@ -444,8 +458,8 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
 
         {allSemestersData.length > 0 && (
           <>
-            <Separator />
-            <div className="space-y-2">
+            <Separator className="print:hidden"/>
+            <div className="space-y-2 pt-4 print:pt-6">
               <h3 className="text-xl font-semibold text-center flex items-center justify-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary" />Overall Grade Distribution</h3>
               <GradeDistributionChart allSemestersData={allSemestersData} />
             </div>
@@ -456,3 +470,4 @@ function ResultsDisplay({ sgpas, cgpa, allSemestersData }: ResultsDisplayProps) 
     </Card>
   );
 }
+

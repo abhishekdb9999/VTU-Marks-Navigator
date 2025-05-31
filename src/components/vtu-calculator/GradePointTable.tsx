@@ -7,7 +7,7 @@ import { GRADE_OPTIONS } from "@/types/vtuCalculator";
 
 export function GradePointTable() {
   return (
-    <Card className="mt-6 mb-4">
+    <Card className="mt-6 mb-4 print:hidden">
       <CardHeader>
         <CardTitle className="text-lg text-center">VTU Grade Point System</CardTitle>
       </CardHeader>
